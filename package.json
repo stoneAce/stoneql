@@ -44,6 +44,7 @@
     "test:receive-limit:live": "node tools/prepare-receive-limit.mjs && node tools/test-connection-lifecycle.mjs --packet-limit",
     "audit:release": "node tools/audit-release.mjs",
     "audit:release:linux": "node tools/audit-release.mjs --linux",
+    "audit:release:windows": "node tools/audit-release.mjs --windows",
     "rust:vendor": "node tools/check-sqlx-vendor.mjs",
     "test:native-database": "node tools/test-connection-lifecycle.mjs --native-ipc",
     "test:native-postgres": "node tools/test-postgres-fixture.mjs",

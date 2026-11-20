@@ -35,8 +35,8 @@ test('an exception that is no longer reported fails as stale, and a malformed re
   assert.deepEqual(auditProblems(null, linuxExceptions), ['cargo audit report is missing or malformed']);
 });
 
-test('the macOS release audit has no exceptions', () => {
+test('the macOS and Windows release audits have no exceptions', () => {
   const source = readFileSync(new URL('../tools/audit-release.mjs', import.meta.url), 'utf8');
-  assert.match(source, /if \(linux\) \{[\s\S]*auditProblems\(report, linuxExceptions\)[\s\S]*\} else \{\n\s*const audit = spawnSync\('cargo', \['audit', '--file', file, \.\.\.auditArgs\]/);
+  assert.match(source, /const exceptions = linux \? linuxExceptions : \[\];[\s\S]*auditProblems\(report, exceptions\)[\s\S]*\} else \{\n\s*const audit = spawnSync\('cargo', \['audit', '--file', file, \.\.\.auditArgs\]/);
   assert.doesNotMatch(source, /--ignore/);
 });
