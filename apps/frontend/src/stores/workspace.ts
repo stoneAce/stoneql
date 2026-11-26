@@ -20,7 +20,7 @@ import {
 } from '../services/recordMutations';
 import { defineStore } from 'pinia';
 import { connections as samples, createDatabases } from '../data/sample';
-import type { Connection, Workspace, Row, Column } from '../types';
+import type { Connection, Workspace, Row, Column, SqlResult } from '../types';
 import { applyColumnDefinition, expressionValue } from '../services/columnDefinition';
 import type { ColumnDraft } from '../services/columnDefinition';
 import {
@@ -97,8 +97,10 @@ export const useWorkspace = defineStore('workspace', () => {
     if (i < 0 || !other) return;
     [groups.value[i], groups.value[i + direction]] = [other, groups.value[i]!];
   }
-  const liveSessions = ref<Record<string,{status:'connecting'|'connected'|'disconnected'|'error';info?:LiveConnection;error?:string;lease?:{id:string;state:'active'|'rollback_only'}}>>({});
+  /** `resume`: the session ended by itself (lifetime or lost connection) and may reopen as it was. */
+  const liveSessions = ref<Record<string,{status:'connecting'|'connected'|'disconnected'|'error';info?:LiveConnection;error?:string;lease?:{id:string;state:'active'|'rollback_only'};resume?:{access:AccessModeDto;database:string}}>>({});
   const liveGenerations = new Map<string,number>();
+  const reconnecting = new Map<string,Promise<void>>();
   /**
    * Unknown outcomes the native host keeps until the user acknowledges them: from before a
    * reload and, through its durable journal, from before a restart (`restored`).
@@ -176,6 +178,50 @@ export const useWorkspace = defineStore('workspace', () => {
       throw error;
     }
   }
+  /**
+   * Reopens a session that ended by itself with the profile's saved password, the same access
+   * and the same database. Refused without a saved password (typed passwords are not kept)
+   * and for Production read-write, whose access must be confirmed again. Each call makes at
+   * most one attempt; a failed attempt keeps `resume` so the user's next action tries again.
+   */
+  function reconnectLive(id:string):Promise<void> {
+    const pending=reconnecting.get(id);
+    if(pending)return pending;
+    const session=liveSessions.value[id], resume=session?.resume, profile=connections.value.find(c=>c.id===id);
+    if(!session||!resume||!profile)return Promise.resolve();
+    const refused=profile.engine!=='SQLite'&&!profile.passwordRef?'The live session ended and its password is not saved; reconnect to continue.'
+      :resume.access==='read_write'&&profile.environment==='Production'?'The Production read-write session ended; reconnect and confirm read-write access to continue.':'';
+    if(refused){ liveSessions.value[id]={...session,error:refused}; return Promise.reject(new Error(refused)); }
+    const generation=(liveGenerations.get(id)||0)+1;
+    liveGenerations.set(id,generation);
+    liveSessions.value[id]={status:'connecting',resume};
+    const attempt=(async()=>{
+      let info:LiveConnection;
+      try {
+        info=await openLive(profile,undefined,resume.access);
+        // Back on the database in use before; marked connected only then, so nothing reads the default one.
+        if(info.database!==resume.database)try { info={...info,database:(await switchDatabase(info.handle,resume.database)).database}; } catch { /* stays on the default; the workspace follows below */ }
+      } catch(error) {
+        const message=`The live session ended and reconnecting failed: ${(error as Error).message}`;
+        if(liveGenerations.get(id)===generation)liveSessions.value[id]={status:'error',error:message,resume};
+        throw new Error(message);
+      }
+      if(liveGenerations.get(id)!==generation){ await closeLive(info.handle).catch(()=>undefined); throw new Error('Connection configuration changed during reconnect.'); }
+      const ws=workspaces.value[id];
+      if(ws&&info.database!==resume.database)Object.assign(ws,{database:info.database,table:'',scope:'database',page:1,filter:''});
+      liveSessions.value[id]={status:'connected',info};
+    })().finally(()=>reconnecting.delete(id));
+    reconnecting.set(id,attempt);
+    return attempt;
+  }
+  /** The connected session, reopening one that ended by itself first. */
+  async function ensureLive(id:string,message='Connect this live profile first.') {
+    const before=liveSessions.value[id];
+    if(before?.resume||reconnecting.has(id))await reconnectLive(id);
+    const current=liveSessions.value[id];
+    if(current?.status!=='connected'||!current.info)throw new Error(message);
+    return current as typeof current&{info:LiveConnection};
+  }
   async function refreshLiveStatus(id:string) {
     const current=liveSessions.value[id];
     if(current?.status!=='connected'||!current.info)return;
@@ -184,30 +230,35 @@ export const useWorkspace = defineStore('workspace', () => {
       const status=await liveStatus(current.info.handle);
       if(liveGenerations.get(id)===generation && !status.connected){
         liveGenerations.set(id,(generation||0)+1);
-        liveSessions.value[id]={status:'disconnected',error:'Live session expired or closed. Reconnect before running SQL.'};
+        // An open transaction ended with the handle; the user must see that, so no reconnect.
+        const resume=current.lease?undefined:{access:current.info.access,database:current.info.database};
+        liveSessions.value[id]={status:'disconnected',error:'Live session expired or closed. Reconnect before running SQL.',...(resume?{resume}:{})};
+        if(resume)await reconnectLive(id).catch(()=>undefined);
       }
     }catch(error){if(liveGenerations.get(id)===generation)liveSessions.value[id]={...current,status:'error',error:(error as Error).message};}
   }
-  async function executeLive(id:string,sql:string) {
-    const current=liveSessions.value[id];
-    if(current?.status!=='connected'||!current.info)throw new Error('Connect this live profile before running SQL.');
+  async function executeLive(id:string,sql:string,retry=true):Promise<SqlResult> {
+    const current=await ensureLive(id,'Connect this live profile before running SQL.');
     const generation=liveGenerations.get(id);
     try {
       const result=await queryLive(current.info.handle,sql);
       if(liveGenerations.get(id)!==generation)throw new Error('Query results were discarded because the connection changed.');
       return result;
     }catch(error){
-      if(error instanceof NativeOperationError && ['FORBIDDEN','CONNECTION_UNAVAILABLE'].includes(error.code) && liveGenerations.get(id)===generation){
+      if(error instanceof NativeOperationError && ['FORBIDDEN','CONNECTION_UNAVAILABLE','CONNECTION_LOST'].includes(error.code) && liveGenerations.get(id)===generation){
+        const resume=current.lease?undefined:{access:current.info.access,database:current.info.database};
         try{await disconnectLiveProfile(id);}catch{};
-        liveSessions.value[id]={status:'error',error:error.message};
+        liveSessions.value[id]={status:'error',error:error.message,...(resume?{resume}:{})};
+        // A read-only query is safe to run again, once, on the reopened session.
+        if(resume&&retry)return executeLive(id,sql,false);
       }
       throw error;
     }
   }
   /** Read-write job on the live handle, inside the open transaction lease when there is one. */
   async function runLiveJobFor(id:string,sql:string,onJob?:(jobId:string)=>void) {
-    const current=liveSessions.value[id];
-    if(current?.status!=='connected'||!current.info)throw new Error('Connect this live profile before running SQL.');
+    // Reopened only before anything is sent; a job is never run again after a failure.
+    const current=await ensureLive(id,'Connect this live profile before running SQL.');
     const generation=liveGenerations.get(id);
     const lease=current.lease;
     // The lease's end as the native runtime recorded it (expired, closed, connection lost).
@@ -279,8 +330,7 @@ export const useWorkspace = defineStore('workspace', () => {
    * access). Refused while a transaction is open; unsaved query tabs are kept.
    */
   async function switchLiveDatabase(id:string,database:string) {
-    const current=liveSessions.value[id];
-    if(current?.status!=='connected'||!current.info)throw new Error('Connect this live profile first.');
+    const current=await ensureLive(id);
     if(current.info.database===database)return;
     if(current.lease)throw new Error('Commit or roll back the open transaction before switching databases.');
     let switched;
@@ -323,8 +373,7 @@ export const useWorkspace = defineStore('workspace', () => {
     return {sql:plan.sql,rows:labelledRows(page),total,totalError};
   }
   async function beginLiveTransaction_(id:string) {
-    const current=liveSessions.value[id];
-    if(current?.status!=='connected'||!current.info)throw new Error('Connect this live profile first.');
+    const current=await ensureLive(id);
     let lease;
     try { lease=await beginLiveTransaction(current.info.handle); }
     catch(error){ if(error instanceof NativeOperationError&&(error.code==='UNRESOLVED_OUTCOMES'||error.code==='OUTCOME_JOURNAL_UNAVAILABLE'))await refreshUnresolvedOutcomes(); throw error; }
@@ -519,7 +568,7 @@ export const useWorkspace = defineStore('workspace', () => {
   function saveEvent(draft:ScheduledEvent,original='') {objectActions.saveEvent(objectDatabase(),JSON.parse(JSON.stringify(draft)),connection.value.engine,original);}
   function dropObject(kind:'routines'|'triggers'|'events',name:string) {objectActions.dropDatabaseObject(objectDatabase(),kind,name,connection.value.engine);}
   return {
-    liveSessions, connectLiveProfile, disconnectLiveProfile, executeLive, refreshLiveStatus, loadLiveTables, loadLiveColumns, browseLive,
+    liveSessions, connectLiveProfile, disconnectLiveProfile, ensureLive, executeLive, refreshLiveStatus, loadLiveTables, loadLiveColumns, browseLive,
     liveDatabase, loadLiveDatabases, switchLiveDatabase,
     unresolvedOutcomes, unresolvedError, journalProblem, outcomeProfiles, refreshUnresolvedOutcomes, acknowledgeUnresolvedOutcome,
     runLiveJob: runLiveJobFor, beginLiveTransaction: beginLiveTransaction_, endLiveTransaction: endLiveTransaction_,

@@ -114,7 +114,13 @@ While a test or connection is in progress, **Cancel connecting** stops it and di
 - **Groups:** create, rename and delete collapsible groups in the connection manager, and move a connection with its **Group** selector. Deleting a group keeps its connections under *Ungrouped*.
 - **Edit or remove** a connection from the connection manager.
 - **Several connections at once:** each open connection has its own tab with its own Explorer, SQL tabs and results.
-- **Disconnect** from the SQL tab, or close the connection's tab. Sessions end after one hour, and StoneQL never reconnects by itself: choose **Connect** again.
+- **Disconnect** from the SQL tab, or close the connection's tab.
+- **Reconnecting by itself:** a session ends after one hour, or when its connection to the server is lost. If the connection's password is saved, StoneQL then reconnects by itself, with the same access and on the same database, and a read-only query that failed because of it runs once more. Otherwise choose **Connect** again. StoneQL doesn't reconnect by itself:
+  - after you disconnect,
+  - when a transaction was open (it ended with the session; StoneQL tells you how),
+  - for a read-write session on a **Production** connection, where you confirm read-write access again.
+
+  Changes and imports that failed are never run again.
 - After restarting StoneQL, connect again; you are asked for the password unless it is saved.
 
 StoneQL stores connection names, groups, colors, tags and other non-secret settings on your computer. Passwords and key passphrases are kept only in the password store described in [Saved passwords](#saved-passwords), and CA certificates are never stored.
