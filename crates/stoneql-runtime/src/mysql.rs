@@ -92,6 +92,7 @@ pub(crate) async fn open(
             .max_connections(1)
             .min_connections(0)
             .acquire_timeout(deadline)
+            .idle_timeout(crate::POOL_IDLE_TIMEOUT)
             .connect_with(options),
     )
     .await

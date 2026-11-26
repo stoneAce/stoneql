@@ -115,7 +115,8 @@ While a test or connection is in progress, **Cancel connecting** stops it and di
 - **Edit or remove** a connection from the connection manager.
 - **Several connections at once:** each open connection has its own tab with its own Explorer, SQL tabs and results.
 - **Disconnect** from the SQL tab, or close the connection's tab.
-- **Reconnecting by itself:** a session ends after one hour, or when its connection to the server is lost. If the connection's password is saved, StoneQL then reconnects by itself, with the same access and on the same database, and a read-only query that failed because of it runs once more. Otherwise choose **Connect** again. StoneQL doesn't reconnect by itself:
+- **Staying connected:** while a connection is open, StoneQL keeps its password in the app's memory (never on disk, and never in the window's web page). It doesn't hold a database connection while you're idle: it closes it after a minute and signs in again on your next action, so a restarted server or a dropped network connection doesn't disconnect you. The session ends when you disconnect, close its tab, reload or quit, and after **8 hours unused**. While your computer stays awake, StoneQL may keep the password for that long.
+- **Reconnecting by itself:** when a session ends after 8 hours unused, or its SSH tunnel closes, StoneQL reconnects by itself if the connection's password is saved, with the same access and on the same database. A read-only query that failed because of it runs once more. Otherwise choose **Connect** again. StoneQL doesn't reconnect by itself:
   - after you disconnect,
   - when a transaction was open (it ended with the session; StoneQL tells you how),
   - for a read-write session on a **Production** connection, where you confirm read-write access again.

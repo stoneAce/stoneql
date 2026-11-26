@@ -15,6 +15,10 @@ use stoneql_runtime::{
     Access, ConnectionId, DirectServer, LifecycleError, PasswordRsaKey, QueryLimits, ReadError,
 };
 use tauri::{Runtime, State, WebviewWindow};
+/// A live handle ends after this long unused (Disconnect, a renderer reload or quit end it
+/// sooner). Until then the host keeps its sign-in details in memory and reopens database
+/// connections as needed; it holds none while idle.
+pub(crate) const HANDLE_IDLE_LIFETIME: Duration = Duration::from_secs(8 * 3600);
 pub(crate) fn authorize<R: Runtime>(
     window: &WebviewWindow<R>,
     session: &NativeSession,
@@ -275,7 +279,7 @@ pub(crate) async fn connected(
             handle: handle.opaque(),
             engine_version,
             database,
-            expires_after_seconds: 3600,
+            expires_after_seconds: HANDLE_IDLE_LIFETIME.as_secs() as u32,
             access,
         },
     })

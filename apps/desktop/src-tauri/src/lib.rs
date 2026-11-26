@@ -192,7 +192,7 @@ impl NativeSession {
         let connections = stoneql_runtime::Connections::new(
             8,
             std::time::Duration::from_secs(3),
-            std::time::Duration::from_secs(3600),
+            database::HANDLE_IDLE_LIFETIME,
         )
         .expect("static native limits");
         // Fail closed until the journal is opened at setup: no read-write work before then.

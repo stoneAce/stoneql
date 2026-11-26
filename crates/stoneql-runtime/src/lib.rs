@@ -291,19 +291,25 @@ struct Entry {
     work: Arc<Semaphore>,
     /// SSH transport owned by this handle; closed after its pool, never shared.
     tunnel: Option<ssh::Tunnel>,
-    expires: Instant,
+    /// Last use by a query, job, transaction or transfer (status checks do not count). The
+    /// handle, which keeps the sign-in details in its connect options, ends after `idle` unused.
+    last_used: Arc<Mutex<Instant>>,
+    idle: Duration,
     _permit: OwnedSemaphorePermit,
     _expiry_cancel: oneshot::Sender<()>,
 }
 impl Entry {
     fn usable(&self, owner: OwnerId) -> bool {
         self.owner == owner
-            && self.expires > Instant::now()
+            && self.last_used.lock().expect("handle use lock").elapsed() < self.idle
             && !self.pool.is_closed()
             && self
                 .tunnel
                 .as_ref()
                 .is_none_or(|tunnel| !tunnel.is_closed())
+    }
+    fn touch(&self) {
+        *self.last_used.lock().expect("handle use lock") = Instant::now();
     }
     /// The single close path for disconnect, expiry, reset and shutdown.
     async fn close(self) {
@@ -332,7 +338,9 @@ struct Inner {
     next_attempt: AtomicU64,
     slots: Arc<Semaphore>,
     deadline: Duration,
-    lifetime: Duration,
+    /// A handle ends after this long without use. Its pool keeps no idle database connection
+    /// ([`POOL_IDLE_TIMEOUT`]): each use opens one again with the kept sign-in details.
+    idle_lifetime: Duration,
     execution: execution::ExecutionState,
 }
 /// Removes a pending setup on every exit path, including a dropped (cancelled) future.
@@ -356,6 +364,10 @@ impl Attempt {
         let _ = (&mut self.cancelled).await;
     }
 }
+/// An idle pooled database connection is closed after this long; the next use opens a new one
+/// with the handle's sign-in details, so a server restart or a dropped connection is recovered
+/// without the renderer. Dedicated job and transaction connections are not pooled.
+pub(crate) const POOL_IDLE_TIMEOUT: Duration = Duration::from_secs(60);
 /// Clone shares one bounded registry; every handle is scoped to its trusted owner.
 #[derive(Clone)]
 pub struct Connections(Arc<Inner>);
@@ -365,13 +377,13 @@ impl Connections {
     pub fn new(
         capacity: usize,
         deadline: Duration,
-        lifetime: Duration,
+        idle_lifetime: Duration,
     ) -> Result<Self, LifecycleError> {
         if !(1..=64).contains(&capacity)
             || deadline.is_zero()
             || deadline > Duration::from_secs(30)
-            || lifetime.is_zero()
-            || lifetime > Duration::from_secs(86_400)
+            || idle_lifetime.is_zero()
+            || idle_lifetime > Duration::from_secs(86_400)
         {
             return Err(LifecycleError::InvalidConfiguration);
         }
@@ -383,7 +395,7 @@ impl Connections {
             next_attempt: AtomicU64::new(0),
             slots: Arc::new(Semaphore::new(capacity)),
             deadline,
-            lifetime,
+            idle_lifetime,
             execution: execution::ExecutionState::new(),
         })))
     }
@@ -729,7 +741,8 @@ impl Connections {
         } = details;
         let id = ConnectionId(Uuid::new_v4());
         let (cancel, cancelled) = oneshot::channel();
-        let expires = Instant::now() + self.0.lifetime;
+        let (idle, last_used) = (self.0.idle_lifetime, Arc::new(Mutex::new(Instant::now())));
+        let watched = last_used.clone();
         // F-03: a dead SSH session releases the handle through the same close path as expiry.
         let tunnel_closed = tunnel.as_ref().map(ssh::Tunnel::closed);
         {
@@ -750,7 +763,8 @@ impl Connections {
                     access,
                     work: Arc::new(Semaphore::new(ExecutionLimits::RUNNING_JOBS_PER_HANDLE)),
                     tunnel: tunnel.take(),
-                    expires,
+                    last_used,
+                    idle,
                     _permit: permit,
                     _expiry_cancel: cancel,
                 },
@@ -764,10 +778,20 @@ impl Connections {
                     None => std::future::pending().await,
                 }
             };
-            tokio::select! {
-                _ = tokio::time::sleep_until(expires) => {},
-                () = tunnel_closed => {},
-                _ = cancelled => return,
+            tokio::pin!(tunnel_closed);
+            let mut cancelled = cancelled;
+            // Idle expiry: each wake re-reads the last use and sleeps again until it is old enough.
+            loop {
+                let idle_end = *watched.lock().expect("handle use lock") + idle;
+                tokio::select! {
+                    _ = tokio::time::sleep_until(idle_end) => {
+                        if watched.lock().expect("handle use lock").elapsed() >= idle {
+                            break;
+                        }
+                    },
+                    () = &mut tunnel_closed => break,
+                    _ = &mut cancelled => return,
+                }
             }
             let Some(inner) = registry.upgrade() else {
                 return;
@@ -793,7 +817,10 @@ impl Connections {
             .expect("connection registry lock")
             .get(&id)
             .filter(|entry| entry.usable(owner))
-            .map(|entry| entry.pool.clone())
+            .map(|entry| {
+                entry.touch();
+                entry.pool.clone()
+            })
     }
     pub fn engine_version(
         &self,
@@ -830,7 +857,13 @@ impl Connections {
             .ok_or(LifecycleError::Forbidden)
     }
     pub fn is_connected(&self, owner: OwnerId, id: ConnectionId) -> bool {
-        self.owned_pool(owner, id).is_some()
+        // A status check is not a use: it never keeps an idle handle alive.
+        self.0
+            .entries
+            .lock()
+            .expect("connection registry lock")
+            .get(&id)
+            .is_some_and(|entry| entry.usable(owner))
     }
     /// Reopens a MySQL/MariaDB handle's session on another database, keeping the handle, its
     /// access, credentials and SSH tunnel. Refused while the handle runs a job or holds a
@@ -870,6 +903,7 @@ impl Connections {
                 .max_connections(1)
                 .min_connections(0)
                 .acquire_timeout(deadline)
+                .idle_timeout(POOL_IDLE_TIMEOUT)
                 .connect_with(options),
         )
         .await
@@ -1195,6 +1229,32 @@ mod tests {
         tokio::task::yield_now().await;
         assert!(!connections.is_connected(owner, id));
         assert!(pool.is_closed());
+        assert!(connections.0.slots.clone().try_acquire_owned().is_ok());
+    }
+    /// The lifetime is idle time: each use starts it again, status checks do not, and an
+    /// unused handle still ends on time.
+    #[tokio::test(start_paused = true)]
+    async fn use_keeps_a_handle_open_and_status_checks_do_not() {
+        let connections =
+            Connections::new(1, Duration::from_secs(1), Duration::from_secs(60)).unwrap();
+        let owner = OwnerId::new();
+        let id = register(&connections, owner);
+        for _ in 0..3 {
+            tokio::time::advance(Duration::from_secs(40)).await;
+            assert!(connections.owned_pool(owner, id).is_some(), "a use");
+        }
+        tokio::task::yield_now().await;
+        assert!(connections.is_connected(owner, id), "120 s old, 40 s idle");
+        for _ in 0..3 {
+            tokio::time::advance(Duration::from_secs(20)).await;
+            tokio::task::yield_now().await;
+            let _ = connections.is_connected(owner, id);
+        }
+        tokio::task::yield_now().await;
+        assert!(
+            !connections.is_connected(owner, id),
+            "60 s of status checks only"
+        );
         assert!(connections.0.slots.clone().try_acquire_owned().is_ok());
     }
     #[tokio::test]

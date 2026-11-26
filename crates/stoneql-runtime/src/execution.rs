@@ -1921,6 +1921,7 @@ impl Connections {
             .get(&handle)
             .filter(|entry| entry.usable(owner))
             .ok_or(ExecutionError::Forbidden)?;
+        entry.touch();
         if entry.access != Access::ReadWrite {
             return Err(ExecutionError::ReadOnlyHandle);
         }

@@ -179,7 +179,7 @@ All values are defined once in `ExecutionLimits` (`crates/stoneql-runtime/src/ex
 | Release on close/reset/shutdown | 5 s overall |
 | SQLite read-write busy timeout | 5 s |
 
-The handle lifetime (3600 s) is still defined in two places (desktop `NativeSession` and the `expires_after_seconds` reply); not changed here.
+The handle lifetime is an idle lifetime (8 h, `HANDLE_IDLE_LIFETIME` in the desktop host), defined once and used for both the registry and the `expires_after_seconds` reply (D028).
 
 ## Verification
 

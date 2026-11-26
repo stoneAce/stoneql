@@ -160,7 +160,7 @@ Too many live connections are open. Disconnect or close a connection tab you are
 
 ### “Connection is unavailable to this session. Reconnect before running queries.”
 
-The connection is no longer available to this window, for example because its session ended (sessions last one hour) or the server closed it. If the password is saved, StoneQL reconnects by itself on your next action (see [Manage connections](./connect#manage-connections)). Otherwise, or after a Production read-write session, choose **Connect** again.
+The connection is no longer available to this window, for example because its session ended after 8 hours unused or its SSH tunnel closed. If the password is saved, StoneQL reconnects by itself on your next action (see [Manage connections](./connect#manage-connections)). Otherwise, or after a Production read-write session, choose **Connect** again.
 
 ### “The live session ended and its password is not saved; reconnect to continue.”
 

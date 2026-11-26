@@ -7,9 +7,9 @@
 // Each server is checked fresh, then restarted (same data directory and key pair) and checked
 // again. `--network-address` (Linux only) connects to the container's own address on the Docker
 // bridge instead of a published loopback port: a real non-loopback address, never published.
-import { spawnSync } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import { chmodSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
-import { connect } from 'node:net';
+import { connect, createServer } from 'node:net';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { randomBytes } from 'node:crypto';
@@ -36,6 +36,11 @@ const servers = [
 run('cargo', ['build', '--locked', '-p', 'stoneql-runtime', '--example', 'rsa_sign_in']);
 const binary = resolve(root, 'target/debug/examples/rsa_sign_in');
 
+// A free loopback port, published fixed so the server keeps its address across a restart.
+const freePort = () => new Promise((done, fail) => {
+  const server = createServer().once('error', fail).listen(0, '127.0.0.1', () => { const { port } = server.address(); server.close(() => done(port)); });
+});
+const sleep = (ms) => new Promise((done) => setTimeout(done, ms));
 // The plugin named in the server's initial handshake packet.
 function handshakePlugin(host, port) {
   return new Promise((done, fail) => {
@@ -62,10 +67,11 @@ try {
   const env = { ...base, STONEQL_FIXTURE_PASSWORD: password };
   for (const server of servers) {
     const name = `stoneql-rsa-${randomBytes(6).toString('hex')}-${server.name}`;
+    const hostPort = networkAddress ? 0 : await freePort();
     owned.push(name);
     run('docker', ['run', '-d', '--name', name, '--label', 'stoneql.fixture=mysql-rsa', '--memory', '1g',
       '-e', 'MYSQL_ROOT_PASSWORD', '-e', 'MYSQL_DATABASE=stoneql_rsa', '-v', `${init}:/docker-entrypoint-initdb.d:ro`,
-      ...(networkAddress ? [] : ['-p', '127.0.0.1::3306']), server.image, ...server.args], { ...env, MYSQL_ROOT_PASSWORD: password }, { quiet: true });
+      ...(networkAddress ? [] : ['-p', `127.0.0.1:${hostPort}:3306`]), server.image, ...server.args], { ...env, MYSQL_ROOT_PASSWORD: password }, { quiet: true });
     const ready = async () => {
       const deadline = Date.now() + 180_000;
       // Over TCP inside the container: the entrypoint's socket-only init server does not count.
@@ -81,8 +87,8 @@ try {
         return { host: address, port: 3306 };
       }
       const published = run('docker', ['port', name, '3306']);
-      if (!/^127\.0\.0\.1:\d+$/.test(published)) throw Error('Loopback fixture required');
-      return { host: '127.0.0.1', port: Number(published.split(':')[1]) };
+      if (published !== `127.0.0.1:${hostPort}`) throw Error('Loopback fixture required');
+      return { host: '127.0.0.1', port: hostPort };
     };
     let endpoint = await ready();
     const plugin = await handshakePlugin(endpoint.host, endpoint.port);
@@ -100,6 +106,29 @@ try {
       steps.push(JSON.parse(result.stdout.trim().split('\n').at(-1)));
       console.log(`${server.name}: TLS-off RSA sign-in passed (${step}; ${networkAddress ? 'container network address' : 'published loopback port'}; handshake ${plugin})`);
     }
+    // One handle across the pool's idle timeout and a server restart (see examples/rsa_sign_in.rs).
+    const held = spawn(binary, [], { cwd: root, env: { ...env, STONEQL_RSA_HOST: endpoint.host, STONEQL_RSA_PORT: String(endpoint.port), STONEQL_SERVER_PUBLIC_KEY: key, STONEQL_RSA_STEP: 'recover' }, stdio: ['pipe', 'pipe', 'pipe'] });
+    let output = '';
+    held.stdout.on('data', (data) => { output += data; });
+    held.stderr.on('data', (data) => { output += data; });
+    const exited = new Promise((done) => held.once('close', done));
+    try {
+      for (let waited = 0; !output.includes('HELD'); waited += 500) {
+        if (waited > 120_000 || held.exitCode !== null) throw Error(`${server.name} recover: no handle (${output.replaceAll(password, '[redacted]').trim()})`);
+        await sleep(500);
+      }
+      await sleep(70_000);
+      const connections = run('docker', ['exec', name, 'sh', '-c', `MYSQL_PWD="$MYSQL_ROOT_PASSWORD" exec mysql -uroot -N -e "SELECT COUNT(*) FROM information_schema.PROCESSLIST WHERE USER = 'rsa_trusted'"`], { ...env, MYSQL_ROOT_PASSWORD: password }, { quiet: true });
+      if (connections !== '0') throw Error(`${server.name} recover: ${connections} connection(s) still held after 70 s idle`);
+      run('docker', ['restart', name]);
+      const after = await ready();
+      if (after.host !== endpoint.host || after.port !== endpoint.port) throw Error(`${server.name} recover: the server address changed`);
+      held.stdin.end('\n');
+      const code = await exited;
+      if (code !== 0) throw Error(`${server.name} recover: ${output.replaceAll(password, '[redacted]').trim()}`);
+    } finally { held.kill(); }
+    steps.push({ step: 'recover', idleConnections: 0, passed: true });
+    console.log(`${server.name}: one handle stayed usable across 70 s idle (no server connection held) and a server restart`);
     report.servers.push({ server: server.name, image: server.image, handshake: plugin, steps });
   }
 } finally {

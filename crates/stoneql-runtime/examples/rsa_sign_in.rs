@@ -6,7 +6,9 @@
 //! used for full authentication). Prints only static results; never the password or SQL errors.
 use std::{env, time::Duration};
 use stoneql_core::Engine;
-use stoneql_runtime::{Connections, DirectServer, LifecycleError, OwnerId, PasswordRsaKey};
+use stoneql_runtime::{
+    Connections, DirectServer, LifecycleError, OwnerId, PasswordRsaKey, QueryLimits,
+};
 
 const WRONG_KEY: &[u8] = include_bytes!("../tests/fixtures/rsa-public-key.pem");
 
@@ -17,21 +19,23 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let password = env::var("STONEQL_FIXTURE_PASSWORD")?;
     let server_key = std::fs::read(env::var("STONEQL_SERVER_PUBLIC_KEY")?)?;
     let step = env::var("STONEQL_RSA_STEP")?;
-    let registry = Connections::new(2, Duration::from_secs(10), Duration::from_secs(60))?;
+    // Idle lifetime longer than the recover step's idle wait (70 s).
+    let registry = Connections::new(2, Duration::from_secs(10), Duration::from_secs(600))?;
     let owner = OwnerId::new();
+    let config = |user: &'static str, rsa_key: PasswordRsaKey| DirectServer {
+        engine: Engine::MySql,
+        host: host.clone(),
+        port,
+        username: user.into(),
+        password: password.clone(),
+        database: "stoneql_rsa".into(),
+        root_certificate_pem: None,
+        tls: false,
+        rsa_key,
+    };
     // One sign-in (pool open plus `SELECT VERSION()`), closed again on success.
     let sign_in = |user: &'static str, rsa_key: PasswordRsaKey| {
-        let config = DirectServer {
-            engine: Engine::MySql,
-            host: host.clone(),
-            port,
-            username: user.into(),
-            password: password.clone(),
-            database: "stoneql_rsa".into(),
-            root_certificate_pem: None,
-            tls: false,
-            rsa_key,
-        };
+        let config = config(user, rsa_key);
         let registry = registry.clone();
         async move {
             let id = registry.connect(owner, config).await?;
@@ -109,6 +113,35 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 sign_in("rsa_retrieve", PasswordRsaKey::RetrieveUnverified).await,
                 Ok(()),
             )?;
+        }
+        // One handle kept across an idle period and a server restart (the orchestrator checks
+        // the server holds no connection for it while idle, then restarts the server between
+        // the two queries). The second query must succeed on the same handle: the host reopens
+        // the connection with the sign-in details it keeps, including the full RSA sign-in.
+        "recover" => {
+            let limits = || QueryLimits {
+                rows: 1,
+                bytes: 4096,
+                deadline: Duration::from_secs(10),
+            };
+            let id = registry
+                .connect(owner, config("rsa_trusted", trusted()))
+                .await
+                .map_err(|error| format!("connect: {error:?}"))?;
+            registry
+                .read_only(owner, id, "SELECT 1", limits())
+                .await
+                .map_err(|error| format!("first query: {error:?}"))?;
+            println!("HELD");
+            std::io::stdin().read_line(&mut String::new())?;
+            if !registry.is_connected(owner, id) {
+                return Err("the handle ended while idle".into());
+            }
+            registry
+                .read_only(owner, id, "SELECT 1", limits())
+                .await
+                .map_err(|error| format!("query after idle and restart: {error:?}"))?;
+            registry.disconnect(owner, id).await?;
         }
         _ => return Err("unknown step".into()),
     }
