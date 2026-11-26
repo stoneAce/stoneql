@@ -6,7 +6,7 @@
 
 **“StoneQL” Not Opened** (“Apple could not verify “StoneQL” is free of malware…”), with only **Move to Trash** and **Done**.
 
-This is expected: the beta is not notarized by Apple. If the [checksum matched](./download.md#check-the-download):
+This is expected: StoneQL is not notarized by Apple. If the [checksum matched](./download.md#check-the-download):
 
 1. Choose **Done** (not Move to Trash).
 2. Open **System Settings → Privacy & Security** and scroll to the message about StoneQL.
@@ -16,7 +16,7 @@ If you chose **Move to Trash** by mistake, install again from the DMG. A newly d
 
 ### Windows: “Windows protected your PC”
 
-Microsoft Defender SmartScreen shows this blue window when you run the installer, because the beta installer is not signed. If the [checksum matched](./download.md#check-the-download), choose **More info**, then **Run anyway**. If there is no **Run anyway** button, your organization may block unsigned programs; ask your administrator.
+Microsoft Defender SmartScreen shows this blue window when you run the installer, because the installer is not signed. If the [checksum matched](./download.md#check-the-download), choose **More info**, then **Run anyway**. If there is no **Run anyway** button, your organization may block unsigned programs; ask your administrator.
 
 ### Windows: WebView2 is missing
 
@@ -46,9 +46,9 @@ Both refer to the same saved password. Enter your login password and choose **Al
 - **Allow** permits only this one read, so you will be asked again next time.
 - **Deny** refuses it. StoneQL then reports “The saved credential is unavailable or belongs to a different target. Enter it again.” and does not retry.
 
-Every beta build counts as a new app for macOS, so expect these prompts once after each update.
+Every StoneQL build counts as a new app for macOS, so expect these prompts once after each update.
 
-**If the prompts keep coming back** (Always Allow does not always stick for this beta), save the password again from the installed build:
+**If the prompts keep coming back** (Always Allow does not always stick for these ad-hoc signed builds), save the password again from the installed build:
 
 1. Open **Manage connections** and edit the connection.
 2. Type the database password (or SSH password or key passphrase) again, with **Remember …** ticked.
@@ -180,4 +180,4 @@ If a red **Outcome unknown** panel appears, StoneQL could not confirm whether th
 
 ## Still stuck?
 
-Check [What's in the beta](./beta.md) to see whether the feature is available yet on your system. Report problems in the [StoneQL repository on GitHub](https://github.com/stoneAce/stoneql/issues), with your operating system and version and the file you installed; see [How to report a problem](./beta.md#how-to-report-a-problem). Never include passwords, keys or private data in a report.
+Check [What's in this release](./beta.md) to see whether the feature is available yet on your system. Report problems in the [StoneQL repository on GitHub](https://github.com/stoneAce/stoneql/issues), with your operating system and version and the file you installed; see [How to report a problem](./beta.md#how-to-report-a-problem). Never include passwords, keys or private data in a report.

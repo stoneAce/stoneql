@@ -15,7 +15,7 @@ The Apple Silicon and Intel DMGs install the same way.
 
 ### Approve the first launch
 
-Because the beta is not notarized, macOS blocks the first launch of a downloaded copy. You see a dialog titled **“StoneQL” Not Opened** (“Apple could not verify “StoneQL” is free of malware…”) with only two buttons, **Move to Trash** and **Done**. There is no Open button.
+Because StoneQL is not notarized, macOS blocks the first launch of a downloaded copy. You see a dialog titled **“StoneQL” Not Opened** (“Apple could not verify “StoneQL” is free of malware…”) with only two buttons, **Move to Trash** and **Done**. There is no Open button.
 
 1. Choose **Done** (not Move to Trash).
 2. Open **System Settings → Privacy & Security** and scroll down to the message about StoneQL.
@@ -68,7 +68,7 @@ StoneQL opens on a **Welcome to StoneQL** screen. Continue with [Connect to a da
 
 ### Update on Windows
 
-Not yet tried on a real PC: updating from beta 2 to beta 3.
+Not yet tried on a real PC: updating from an earlier version to 0.1.1.
 
 1. Download the newer `.zip`, [check its checksum](./download.md#check-the-download) and extract the installer.
 2. Quit StoneQL.
@@ -114,7 +114,7 @@ If no desktop keyring is running, StoneQL asks you to choose a master password t
 
 ### Update on Linux
 
-Not yet tried on a real desktop: updating from beta 2 to beta 3.
+Not yet tried on a real desktop: updating from an earlier version to 0.1.1.
 
 1. Download the newer `.deb` and [check its checksum](./download.md#check-the-download).
 2. Quit StoneQL.

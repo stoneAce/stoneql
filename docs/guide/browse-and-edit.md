@@ -88,4 +88,4 @@ Your account needs the privileges to change the table (for example `ALTER` and `
 
 ## Not available yet
 
-Search, table Operations (rename, copy, truncate, drop), bulk Copy of selected rows, and managing views, routines, triggers and events are not available for live connections in this beta. See [What's in the beta](./beta.md).
+Search, table Operations (rename, copy, truncate, drop), bulk Copy of selected rows, and managing views, routines, triggers and events are not available for live connections yet. See [What's in the beta](./beta.md).

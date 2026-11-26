@@ -10,7 +10,7 @@ New connections are **read-write**: SQL scripts, row edits and structure changes
 
 1. **Open the connection manager.** On the **Welcome to StoneQL** screen choose **Manage connections**. (Later you can also use the **+** next to the connection tabs, or **Manage connections** at the top right.)
 2. **Start a new connection.** Choose **New connection** at the bottom of the connection manager.
-3. **Name it and pick the engine.** Enter a **Connection name** (for example *Local development*) and choose the **Database engine**: MySQL, MariaDB or PostgreSQL. The port changes to the engine's default (3306 or 5432). SQLite is listed but is not included in the beta app.
+3. **Name it and pick the engine.** Enter a **Connection name** (for example *Local development*) and choose the **Database engine**: MySQL, MariaDB or PostgreSQL. The port changes to the engine's default (3306 or 5432). SQLite is listed but is not included in the released app.
 4. **Optional: label it.** Choose an **Environment** (Local, Development, Staging, Production or Custom), a **Group** and a **Connection color**. Connections tagged **Production** show a **PROD** badge and ask for extra confirmation; see [Production connections](#production-connections).
 5. **Enter the server and account.** Keep **Direct** selected (or see [Connect through an SSH tunnel](#connect-through-an-ssh-tunnel)), then fill in **Host**, **Port**, **Username** and **Password**. These fields are used exactly as typed.
 6. **Choose read-write or read-only.** Leave **Read-only connection** unticked for full access, or tick it to allow only reading. The choice is saved with the connection. See [Read-only or read-write](#read-only-or-read-write).
@@ -33,7 +33,7 @@ Next: [Browse and edit tables](./browse-and-edit.md).
 
 - **Read-write** (the default) lets you run SQL scripts, use transactions, edit rows, change table structure and import data. Confirmations in StoneQL are safeguards, not permissions: your database account decides what is allowed.
 - **Read-only connection** lets you browse, run single `SELECT` queries and export. The database itself enforces it: StoneQL runs each query inside a read-only transaction.
-- **PostgreSQL through an SSH tunnel** is always read-only in this beta.
+- **PostgreSQL through an SSH tunnel** is always read-only for now.
 
 The SQL tab and the status bar show **Read-only** or **Read-write** for the open connection. To change it, edit the connection and connect again.
 

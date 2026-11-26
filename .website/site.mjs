@@ -7,7 +7,7 @@ export function repositoryUrl() {
   if (value && !/^https:\/\/github\.com\/[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(value)) throw new Error('Expected a public GitHub repository URL');
   return value;
 }
-export const releaseUrl = 'https://github.com/stoneAce/stoneql/releases/tag/v0.1.0-beta.3';
+export const releaseUrl = 'https://github.com/stoneAce/stoneql/releases/tag/v0.1.1';
 export const guideSidebar = [
   { text: 'User guide', items: [
     { text: 'Overview', link: '/guide/' },
@@ -18,7 +18,7 @@ export const guideSidebar = [
     { text: 'Run SQL', link: '/guide/run-sql' },
     { text: 'Import and export', link: '/guide/import-export' },
     { text: 'Troubleshooting', link: '/guide/troubleshooting' },
-    { text: "What's in the beta", link: '/guide/beta' }
+    { text: "What's in this release", link: '/guide/beta' }
   ] }
 ];
 const title = name => name.split('-').map(word => word[0].toUpperCase() + word.slice(1)).join(' ');

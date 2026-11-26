@@ -1,6 +1,12 @@
-# What's in the beta
+# What's in this release
 
-StoneQL **v0.1.0-beta.3** is a public beta, published as a [GitHub pre-release](https://github.com/stoneAce/stoneql/releases/tag/v0.1.0-beta.3). It follows [v0.1.0-beta.2](https://github.com/stoneAce/stoneql/releases/tag/v0.1.0-beta.2), the first build for Windows and Linux, and [v0.1.0-beta.1](https://github.com/stoneAce/stoneql/releases/tag/v0.1.0-beta.1), which was for Apple Silicon Macs only.
+StoneQL **v0.1.1** is published as a [GitHub release](https://github.com/stoneAce/stoneql/releases/tag/v0.1.1). It follows three public betas: [v0.1.0-beta.3](https://github.com/stoneAce/stoneql/releases/tag/v0.1.0-beta.3), [v0.1.0-beta.2](https://github.com/stoneAce/stoneql/releases/tag/v0.1.0-beta.2), the first build for Windows and Linux, and [v0.1.0-beta.1](https://github.com/stoneAce/stoneql/releases/tag/v0.1.0-beta.1), which was for Apple Silicon Macs only.
+
+## What's new in 0.1.1
+
+- **Connections stay connected.** A live connection now ends only after 8 hours without use, instead of after a fixed hour. StoneQL keeps the sign-in in app memory and holds no connection to the server while idle: after 60 seconds without use it closes the database connection and signs in again on your next action. See [Manage connections](./connect.md#manage-connections).
+- **Reconnects by itself** after a server restart or a dropped connection. If the connection did end and its password is saved, StoneQL reconnects with the same access and database. It never does this for a Production read-write connection or after you disconnect.
+- **Security updates** to the libraries StoneQL is built with.
 
 ## What's new in beta.3
 
@@ -20,7 +26,7 @@ StoneQL **v0.1.0-beta.3** is a public beta, published as a [GitHub pre-release](
 
 ## Platforms
 
-| Platform | Status in this beta | Tested on |
+| Platform | Status | Tested on |
 | --- | --- | --- |
 | macOS, Apple Silicon (arm64) | Available. Ad-hoc signed, **not notarized**: the [first launch needs approval](./install.md#approve-the-first-launch) | macOS 27.0.1 only; older versions are untested |
 | macOS, Intel (x86_64) | Available. Signed and approved like the Apple Silicon build | Not yet tested on an Intel Mac |
@@ -87,11 +93,11 @@ Also not supported yet:
 - **Linux:** automated tests on Ubuntu 26.04 in a virtual display, including real databases, SSH tunnels and a throwaway GNOME Keyring. The `.deb` package was installed and launched on Ubuntu 22.04 and Debian 12.
 - **macOS Intel:** built for Intel; not yet tested on an Intel Mac.
 
-StoneQL is beta software and not a backup tool. Keep backups, use accounts with only the privileges you need, and verify important changes on the server.
+StoneQL is not a backup tool. Keep backups, use accounts with only the privileges you need, and verify important changes on the server.
 
 ## What to test
 
-If you try the beta, these are the most useful checks:
+If you try StoneQL, these are the most useful checks:
 
 1. **Install** the file for your system, including the first-launch warning ([Install](./install.md)).
 2. **Launch** StoneQL and reach the **Welcome to StoneQL** screen.

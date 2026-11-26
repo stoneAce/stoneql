@@ -3,13 +3,13 @@ layout: home
 hero:
   name: StoneQL
   text: Old habits. New engine.
-  tagline: StoneAge SQL Admin — formerly dbAdmin. A compact, familiar database client for MySQL, MariaDB and PostgreSQL on macOS, Windows and Linux, now in public beta.
+  tagline: StoneAge SQL Admin — formerly dbAdmin. A compact, familiar database client for MySQL, MariaDB and PostgreSQL on macOS, Windows and Linux.
   image:
     src: /icon.png
     alt: StoneQL faceted-stone database icon
   actions:
     - theme: brand
-      text: Download v0.1.0-beta.3
+      text: Download v0.1.1
       link: /guide/download
     - theme: alt
       text: Install
@@ -38,10 +38,10 @@ features:
     details: First-launch warnings, saved-password prompts and connection errors, with what each message means and what to do.
     link: /guide/troubleshooting
     linkText: Troubleshooting
-  - title: What's in the beta
-    details: macOS (Apple Silicon and Intel), Windows x64 and Linux x86_64 betas, not yet signed or notarized; Intel Macs and real Windows PCs are not yet tested. Search, table Operations and managing views, routines, triggers and events are not available yet.
+  - title: What's in this release
+    details: macOS (Apple Silicon and Intel), Windows x64 and Linux x86_64 builds, not yet signed or notarized; Intel Macs and real Windows PCs are not yet tested. Search, table Operations and managing views, routines, triggers and events are not available yet.
     link: /guide/beta
-    linkText: Beta scope
+    linkText: Release scope
 ---
 
 <div class="home-developer-link">

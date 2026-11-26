@@ -1,10 +1,10 @@
 # Download
 
-StoneQL **v0.1.0-beta.3** is a public beta for macOS, Windows and Linux. Every file in it was built from the same release commit.
+StoneQL **v0.1.1** is available for macOS, Windows and Linux. Every file in it was built from the same release commit.
 
 ## Choose your file
 
-Open the release page for **[StoneQL v0.1.0-beta.3](https://github.com/stoneAce/stoneql/releases/tag/v0.1.0-beta.3)**. Later builds appear on the [releases page](https://github.com/stoneAce/stoneql/releases). Under **Assets**, download the file for your computer, plus `SHA256SUMS`. The release notes list each file name with its platform.
+Open the release page for **[StoneQL v0.1.1](https://github.com/stoneAce/stoneql/releases/tag/v0.1.1)**. Later builds appear on the [releases page](https://github.com/stoneAce/stoneql/releases). Under **Assets**, download the file for your computer, plus `SHA256SUMS`. The release notes list each file name with its platform.
 
 | Your computer | File | Tested on |
 | --- | --- | --- |
@@ -19,7 +19,7 @@ There are no builds yet for Windows on ARM, for Linux on ARM, or for Linux distr
 
 ### Requirements
 
-- **macOS:** the beta was tested on macOS 27.0.1 only. Older versions have not been tested.
+- **macOS:** StoneQL was tested on macOS 27.0.1 only. Older versions have not been tested.
 - **Windows:** the installer needs Microsoft Edge WebView2. Windows 11 includes it and Windows 10 usually has it; if it is missing, the installer downloads it, so stay online while installing. No administrator rights are needed.
 - **Linux:** WebKitGTK 4.1 version 2.38 or later (`libwebkit2gtk-4.1-0`) and glibc 2.34 or later. Ubuntu 22.04 gets that WebKitGTK version from its `jammy-updates` package source, which apt uses when updates are enabled. See [Install on Linux](./install.md#linux).
 
@@ -68,7 +68,7 @@ If the check fails, **do not open the file**: delete it and download it again.
 
 ## About signing
 
-None of the beta files is signed with a publisher certificate yet, so each system warns you the first time:
+None of the release files is signed with a publisher certificate yet, so each system warns you the first time:
 
 - **macOS:** the app is signed ad hoc and **not notarized by Apple** (it has no Developer ID signature). macOS blocks its first launch until you approve it.
 - **Windows:** the installer is **unsigned**. Microsoft Defender SmartScreen shows “Windows protected your PC” until you choose to run it.

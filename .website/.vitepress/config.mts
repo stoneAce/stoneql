@@ -14,7 +14,7 @@ export default defineConfig({
     logo: '/icon.png', nav: [{ text: 'Download', link: releaseUrl }, { text: 'Guide', link: '/guide/', activeMatch: '^/guide/' }, { text: 'Developer Docs', link: '/development/', activeMatch: '^/(development|architecture)/|^/(database-objects|ux-review-remediation)' }, ...(repository ? [{ text: 'GitHub', link: repository }] : [])],
     sidebar, search: { provider: 'local' }, outline: [2, 3],
     socialLinks: repository ? [{ icon: 'github', link: repository }] : [],
-    footer: { message: 'StoneQL v0.1.0-beta.3 · Public beta for macOS, Windows and Linux · Keep backups and verify important changes on the server.' }
+    footer: { message: 'StoneQL v0.1.1 · For macOS, Windows and Linux · Keep backups and verify important changes on the server.' }
   },
   markdown: {
     config(md) {
