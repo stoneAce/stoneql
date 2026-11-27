@@ -7,7 +7,7 @@ export function repositoryUrl() {
   if (value && !/^https:\/\/github\.com\/[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(value)) throw new Error('Expected a public GitHub repository URL');
   return value;
 }
-export const releaseUrl = 'https://github.com/stoneAce/stoneql/releases/tag/v0.1.1';
+export const releaseUrl = 'https://github.com/stoneAce/stoneql/releases/tag/v0.1.2';
 export const guideSidebar = [
   { text: 'User guide', items: [
     { text: 'Overview', link: '/guide/' },

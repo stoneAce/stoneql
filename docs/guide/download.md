@@ -1,10 +1,10 @@
 # Download
 
-StoneQL **v0.1.1** is available for macOS, Windows and Linux. Every file in it was built from the same release commit.
+StoneQL **v0.1.2** is available for macOS, Windows and Linux. Every file in it was built from the same release commit.
 
 ## Choose your file
 
-Open the release page for **[StoneQL v0.1.1](https://github.com/stoneAce/stoneql/releases/tag/v0.1.1)**. Later builds appear on the [releases page](https://github.com/stoneAce/stoneql/releases). Under **Assets**, download the file for your computer, plus `SHA256SUMS`. The release notes list each file name with its platform.
+Open the release page for **[StoneQL v0.1.2](https://github.com/stoneAce/stoneql/releases/tag/v0.1.2)**. Later builds appear on the [releases page](https://github.com/stoneAce/stoneql/releases). Under **Assets**, download the file for your computer, plus `SHA256SUMS`. The release notes list each file name with its platform.
 
 | Your computer | File | Tested on |
 | --- | --- | --- |

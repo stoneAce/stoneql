@@ -1,6 +1,12 @@
 # What's in this release
 
-StoneQL **v0.1.1** is published as a [GitHub release](https://github.com/stoneAce/stoneql/releases/tag/v0.1.1). It follows three public betas: [v0.1.0-beta.3](https://github.com/stoneAce/stoneql/releases/tag/v0.1.0-beta.3), [v0.1.0-beta.2](https://github.com/stoneAce/stoneql/releases/tag/v0.1.0-beta.2), the first build for Windows and Linux, and [v0.1.0-beta.1](https://github.com/stoneAce/stoneql/releases/tag/v0.1.0-beta.1), which was for Apple Silicon Macs only.
+StoneQL **v0.1.2** is published as a [GitHub release](https://github.com/stoneAce/stoneql/releases/tag/v0.1.2). It follows [v0.1.1](https://github.com/stoneAce/stoneql/releases/tag/v0.1.1) and three public betas: [v0.1.0-beta.3](https://github.com/stoneAce/stoneql/releases/tag/v0.1.0-beta.3), [v0.1.0-beta.2](https://github.com/stoneAce/stoneql/releases/tag/v0.1.0-beta.2), the first build for Windows and Linux, and [v0.1.0-beta.1](https://github.com/stoneAce/stoneql/releases/tag/v0.1.0-beta.1), which was for Apple Silicon Macs only.
+
+## What's new in 0.1.2
+
+- **Selecting SQL shows the selection.** In the SQL editor, selected text on the line with the cursor was hidden, so selecting a one-line query looked like nothing happened. It is now always visible.
+- **No vertical scrollbars on the tab rows** above the workspace: the connection tabs with **Manage connections**, and the Browse / Structure / SQL tabs.
+- **Resize the SQL editor** by dragging the bar under it. See [Write and run a query](./run-sql.md#write-and-run-a-query).
 
 ## What's new in 0.1.1
 
@@ -37,7 +43,7 @@ Developer ID signing and notarization for macOS, and code signing for Windows, a
 
 ## What works
 
-- **Databases:** MySQL, MariaDB and PostgreSQL, live. SQLite is not included in the beta app.
+- **Databases:** MySQL, MariaDB and PostgreSQL, live. SQLite is not included in the app.
 - **Connections:** Direct, or through an SSH tunnel on macOS and Linux (SSH agent, password or Ed25519/ECDSA private key) with explicitly trusted host keys. **Use TLS** for MySQL/MariaDB over Direct (off for new connections), always verified TLS for PostgreSQL and SSH tunnels. Passwords can be saved: see [Saved passwords](./connect.md#saved-passwords). See [Connect to a database](./connect.md).
 - **Access:** read-write by default (MySQL/MariaDB Direct and SSH, PostgreSQL Direct), with a saved **Read-only connection** option. PostgreSQL over SSH is always read-only. PROD connections ask for confirmation.
 - **Browsing and editing:** server-side paging, sort and filter; insert, edit and delete rows in tables with a primary key. See [Browse and edit tables](./browse-and-edit.md).

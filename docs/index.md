@@ -9,7 +9,7 @@ hero:
     alt: StoneQL faceted-stone database icon
   actions:
     - theme: brand
-      text: Download v0.1.1
+      text: Download v0.1.2
       link: /guide/download
     - theme: alt
       text: Install

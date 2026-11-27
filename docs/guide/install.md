@@ -68,7 +68,7 @@ StoneQL opens on a **Welcome to StoneQL** screen. Continue with [Connect to a da
 
 ### Update on Windows
 
-Not yet tried on a real PC: updating from an earlier version to 0.1.1.
+Not yet tried on a real PC: updating from an earlier version to 0.1.2.
 
 1. Download the newer `.zip`, [check its checksum](./download.md#check-the-download) and extract the installer.
 2. Quit StoneQL.
@@ -114,7 +114,7 @@ If no desktop keyring is running, StoneQL asks you to choose a master password t
 
 ### Update on Linux
 
-Not yet tried on a real desktop: updating from an earlier version to 0.1.1.
+Not yet tried on a real desktop: updating from an earlier version to 0.1.2.
 
 1. Download the newer `.deb` and [check its checksum](./download.md#check-the-download).
 2. Quit StoneQL.

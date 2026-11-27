@@ -15,6 +15,7 @@ SELECT id, email FROM users WHERE id = 1 ORDER BY id LIMIT 10;
 - **+** (New query) opens another query tab. Query tabs belong to the connection they were opened on.
 - **Query history** lists queries you ran on this connection; select one to put it back in the editor.
 - **Save SQL** saves the editor's text as a `.sql` file.
+- To make the editor taller or shorter, drag the bar under it. You can also select the bar with **Tab** and press **Up** or **Down**, or press **Alt+Up** or **Alt+Down** in the editor.
 
 ## Read-only connections
 
