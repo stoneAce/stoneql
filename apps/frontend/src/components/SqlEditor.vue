@@ -16,17 +16,32 @@ const props = defineProps<{
 const emit = defineEmits<{ 'update:modelValue': [value: string]; execute: [] }>();
 const host = ref<HTMLElement>();
 const editorHeight = ref(180);
+function setEditorHeight(height: number) {
+  editorHeight.value = Math.round(Math.max(96, Math.min(window.innerHeight * 0.6, height)));
+}
 function resizeWithKeyboard(event: KeyboardEvent) {
-  if (event.target !== host.value || !event.altKey || !['ArrowUp', 'ArrowDown'].includes(event.key))
+  const separator = event.currentTarget !== host.value;
+  if (!['ArrowUp', 'ArrowDown'].includes(event.key) || (!separator && (event.target !== host.value || !event.altKey)))
     return;
   event.preventDefault();
-  editorHeight.value = Math.max(
-    96,
-    Math.min(
-      window.innerHeight * 0.6,
-      (host.value?.clientHeight ?? editorHeight.value) + (event.key === 'ArrowDown' ? 24 : -24),
-    ),
-  );
+  setEditorHeight((host.value?.offsetHeight ?? editorHeight.value) + (event.key === 'ArrowDown' ? 24 : -24));
+}
+function resizeWithPointer(event: PointerEvent) {
+  if (event.button !== 0) return;
+  event.preventDefault();
+  const handle = event.currentTarget as HTMLElement;
+  const start = event.clientY;
+  const height = host.value?.offsetHeight ?? editorHeight.value;
+  const move = (moveEvent: PointerEvent) => setEditorHeight(height + moveEvent.clientY - start);
+  const stop = () => {
+    handle.removeEventListener('pointermove', move);
+    handle.removeEventListener('pointerup', stop);
+    handle.removeEventListener('pointercancel', stop);
+  };
+  handle.setPointerCapture(event.pointerId);
+  handle.addEventListener('pointermove', move);
+  handle.addEventListener('pointerup', stop);
+  handle.addEventListener('pointercancel', stop);
 }
 let editor: EditorView | undefined;
 const theme = new Compartment();
@@ -135,7 +150,18 @@ onBeforeUnmount(() => editor?.destroy());
     :style="{ height: editorHeight + 'px' }"
     tabindex="0"
     role="group"
-    aria-label="SQL editor. Resize vertically by dragging the corner or using Alt and Up or Down arrows."
+    aria-label="SQL editor. Resize vertically by dragging the handle below it or using Alt and Up or Down arrows."
+    @keydown="resizeWithKeyboard"
+  />
+  <div
+    class="sql-editor-resizer"
+    role="separator"
+    aria-orientation="horizontal"
+    aria-label="Resize SQL editor"
+    :aria-valuenow="editorHeight"
+    tabindex="0"
+    title="Drag to resize the editor"
+    @pointerdown="resizeWithPointer"
     @keydown="resizeWithKeyboard"
   />
 </template>

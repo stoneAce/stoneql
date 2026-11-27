@@ -972,6 +972,23 @@ code {
   border: 1px solid var(--line);
   overflow: hidden;
 }
+.sql-editor-resizer {
+  height: 6px;
+  margin-top: -1px;
+  border: 1px solid var(--line);
+  border-top: 0;
+  background: var(--toolbar);
+  cursor: row-resize;
+  touch-action: none;
+  user-select: none;
+}
+.sql-editor-resizer:hover {
+  background: var(--hover-line);
+}
+.sql-editor-resizer:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
 .editor-toolbar {
   display: flex;
   gap: var(--space-2);
@@ -1897,11 +1914,10 @@ kbd {
 .connection-tab > button {
   white-space: nowrap;
 }
-.connection-tabs {
-  overflow-x: auto;
-}
+.connection-tabs,
 .view-tabs {
   overflow-x: auto;
+  overflow-y: hidden;
 }
 .view-tabs button {
   white-space: nowrap;
@@ -2166,12 +2182,12 @@ label svg {
   opacity: 1;
 }
 .sql-editor {
-  resize: vertical;
   min-height: 96px;
   max-height: 60vh;
 }
 .query-tabs {
   overflow-x: auto;
+  overflow-y: hidden;
 }
 .query-tabs > div {
   flex-shrink: 0;
