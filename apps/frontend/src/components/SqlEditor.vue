@@ -66,6 +66,8 @@ onMounted(() => {
           borderColor: 'var(--line)',
         },
         '.cm-activeLine, .cm-activeLineGutter': { backgroundColor: 'var(--panel)' },
+        // The selection is drawn behind the text, so the opaque line highlight would hide it.
+        '&.cm-has-selection .cm-activeLine': { backgroundColor: 'transparent' },
         '.cm-cursor, .cm-dropCursor': { borderLeftColor: 'var(--accent)' },
         '&.cm-focused .cm-selectionBackground, .cm-selectionBackground, ::selection': {
           backgroundColor: 'var(--selection)',
@@ -88,6 +90,9 @@ onMounted(() => {
         '.cm-scroller': { overflow: 'auto' },
         '.cm-content': { padding: '8px 0', fontFamily: 'var(--font-mono)' },
       }),
+      EditorView.editorAttributes.compute(['selection'], (state): Record<string, string> =>
+        state.selection.ranges.some((range) => !range.empty) ? { class: 'cm-has-selection' } : {},
+      ),
       EditorView.updateListener.of((update) => {
         if (update.docChanged) emit('update:modelValue', update.state.doc.toString());
       }),
